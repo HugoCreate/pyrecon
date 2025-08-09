@@ -1,6 +1,6 @@
-#PyRecon | Reconnaissance tool.
+  #PyRecon | Reconnaissance tool.
 
-##Functions:
+  ##Functions:
 - Scan ports (range or specific ports).
 - Fuzz URLs to check for open directories or public files.
 
