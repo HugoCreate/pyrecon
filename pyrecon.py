@@ -62,7 +62,7 @@ $
     def scan_port(inst):
             try:
                 sock = sk.socket(sk.AF_INET, sk.SOCK_STREAM)
-                sock.settimeout(0.5)
+                sock.settimeout(1)
                 result = sock.connect_ex((inst.target, int(inst.port)))
                 if result == 0:
                     print(f"[+] The port {str(inst.port)} is OPEN.")
@@ -75,7 +75,7 @@ $
     def scan_unit(inst, current_port):
         try:
             unit = sk.socket(sk.AF_INET, sk.SOCK_STREAM)
-            unit.settimeout(0.5)
+            unit.settimeout(1)
             result = unit.connect_ex((inst.target, current_port))
             if result == 0:
                 print(f"[+] The port {current_port} is OPEN.")
@@ -83,9 +83,8 @@ $
             pass
 
     def scan_range(inst):
-        if "-" in inst.port:
-            start, end = inst.port.split("-")
-            for ports in range(int(start), int(end)):
+        if inst.port == None:
+            for ports in range(1, 1001):
                 threads = []
                 t = threading.Thread(target=inst.scan_unit, args=(ports,))
                 threads.append(t)
@@ -93,9 +92,9 @@ $
             
             for t in threads:
                 t.join()
-
-        elif inst.port == None:
-            for ports in range(1, 1000):
+        elif "-" in inst.port:
+            start, end = inst.port.split("-")
+            for ports in range(int(start), int(end)):
                 threads = []
                 t = threading.Thread(target=inst.scan_unit, args=(ports,))
                 threads.append(t)
@@ -110,28 +109,25 @@ class fuzzer:
         self.url = url 
         self.wordlist = wordlist
 
-    def send_http(self):
+    def enum_wordlist(self):
         pass
-
 
 def scan_option():
     scanner = Port_scanner(args.target, args.port)
-    if "-" in args.port: 
-        scanner.scan_range()
-    elif args.port == None:
+    if args.port == None:
         if re.fullmatch(domain_pattern_global ,args.target, re.VERBOSE):
-            print(f"Scanning the first 1000 ports of the target: {args.target} ({scanner.resolve_domain_ip()}).")
+            print(f"\nScanning the first 1000 ports of the target: {args.target} ({scanner.resolve_domain_ip()}).")
         else:
-            print(f"Scanning the first 1000 ports of the target: {args.target}.")
+            print(f"\nScanning the first 1000 ports of the target: {args.target}.")
+        scanner.scan_range()
+    elif "-" in args.port: 
         scanner.scan_range()
     else:    
         scanner.scan_port()
-    
 
 def fuzz_option():
     print(f"The URL is: {args.url}")
     print(f"The wordlist is: {args.wordlist}")
-
 
 def main():
     if args.command == "scan":
@@ -141,4 +137,5 @@ def main():
     else:
         print(help_text)
 
+        
 main()
