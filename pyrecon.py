@@ -1,10 +1,11 @@
 import socket as sk
 import argparse as arg
-#import requests as req
+import requests as req
 #import httpx
 import re
 import sys
 import threading
+import os
 
 domain_pattern_global = r"""\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b"""
 
@@ -79,6 +80,7 @@ $
             result = unit.connect_ex((inst.target, current_port))
             if result == 0:
                 print(f"[+] The port {current_port} is OPEN.")
+            unit.close()
         except sk.gaierror as e:
             pass
 
@@ -103,22 +105,35 @@ $
             for t in threads:
                 t.join()
 
-class fuzzer:
-    
+class Fuzzer:
+
     def __init__(self, url, wordlist):
         self.url = url 
         self.wordlist = wordlist
 
-    def enum_wordlist(self):
+    def fuzz_action(self):
+        url_patt = r"""^https?:\/\/(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/\S*)?$"""
+        if "PROBE" in self.url:
+            with open(self.wordlist, "r") as wl:
+                for line in wl:
+                    word = line.strip()
+                    furl = self.url.replace("PROBE", word)
+                    try:
+                        get_req = req.get(furl, timeout=3)
+                        print(f"/{word} --> [{get_req.status_code}]")
+                    except:
+                        pass        
+        else:
+            raise ValueError("The url must contain the word PROBE to enumerate directories.")
+        
+    def status_filter(self):
         pass
+
 
 def scan_option():
     scanner = Port_scanner(args.target, args.port)
     if args.port == None:
-        if re.fullmatch(domain_pattern_global ,args.target, re.VERBOSE):
-            print(f"\nScanning the first 1000 ports of the target: {args.target} ({scanner.resolve_domain_ip()}).")
-        else:
-            print(f"\nScanning the first 1000 ports of the target: {args.target}.")
+        print(f"\nScanning the first 1000 ports of the target: {args.target} ({scanner.resolve_domain_ip()})." if re.fullmatch(domain_pattern_global ,args.target, re.VERBOSE) else f"\nScanning the first 1000 ports of the target: {args.target}.")
         scanner.scan_range()
     elif "-" in args.port: 
         scanner.scan_range()
@@ -126,8 +141,7 @@ def scan_option():
         scanner.scan_port()
 
 def fuzz_option():
-    print(f"The URL is: {args.url}")
-    print(f"The wordlist is: {args.wordlist}")
+    fuzz = Fuzzer(args.url, args.wordlist)
 
 def main():
     if args.command == "scan":
