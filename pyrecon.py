@@ -6,6 +6,7 @@ import re
 import sys
 import threading
 import os
+#import urllib3 as murl
 
 domain_pattern_global = r"""\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b"""
 
@@ -113,16 +114,20 @@ class Fuzzer:
 
     def fuzz_action(self):
         url_patt = r"""^https?:\/\/(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/\S*)?$"""
-        if "PROBE" in self.url:
-            with open(self.wordlist, "r") as wl:
-                for line in wl:
-                    word = line.strip()
-                    furl = self.url.replace("PROBE", word)
-                    try:
-                        get_req = req.get(furl, timeout=3)
-                        print(f"/{word} --> [{get_req.status_code}]")
-                    except:
-                        pass        
+        path_patt = r"""(?:[a-zA-Z]:)?(?:[/\\][\w.-]+)+"""
+        if "PROBE" in self.url and re.match(url_patt, str(self.url)):
+            if re.match(path_patt, self.wordlist):    
+                with open(self.wordlist, "r") as wl:
+                    for line in wl:
+                        word = line.strip()
+                        furl = self.url.replace("PROBE", word)
+                        try:
+                            get_req = req.get(furl, timeout=3)
+                            print(f"/{word} --> [{get_req.status_code}]")
+                        except:
+                            pass
+            else:
+                raise ValueError("The wordlist wasn't found, we couldn't understand the path.")    
         else:
             raise ValueError("The url must contain the word PROBE to enumerate directories.")
         
